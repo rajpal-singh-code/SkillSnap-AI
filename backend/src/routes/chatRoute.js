@@ -7,8 +7,11 @@ const chatRoute = express.Router();
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 async function generateInterviewQA(skill) {
-  // Use the current stable model for 2026
-  const model = genAI.getGenerativeModel({ model: "gemini-3-flash" });
+  // Explicitly set the API version to v1 to avoid the 404 on v1beta
+  const model = genAI.getGenerativeModel(
+    { model: "gemini-2.0-flash" }, // Use gemini-2.0-flash as the stable standard
+    { apiVersion: "v1" } 
+  );
 
   const prompt = `Generate 10 mock interview questions and answers on "${skill}". Return ONLY a valid JSON array. Format: [{"question": "string", "answer": "string"}]`;
 
@@ -16,9 +19,8 @@ async function generateInterviewQA(skill) {
   const response = await result.response;
   const text = response.text();
   
-  // Robust JSON extraction
   const jsonMatch = text.match(/\[[\s\S]*\]/);
-  if (!jsonMatch) throw new Error("AI response did not contain valid JSON");
+  if (!jsonMatch) throw new Error("Invalid JSON response");
   
   return JSON.parse(jsonMatch[0]);
 }
