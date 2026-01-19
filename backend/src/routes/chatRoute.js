@@ -7,10 +7,7 @@ const chatRoute = express.Router();
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 async function generateInterviewQA(skill) {
-  const model = genAI.getGenerativeModel(
-    { model: "gemini-2.5-flash" },
-    { apiVersion: "v1" }
-  );
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
   const prompt = `Generate 10 mock interview questions and answers on "${skill}". Return ONLY a valid JSON array. Format: [{"question": "string", "answer": "string"}]`;
 

@@ -1,17 +1,14 @@
 const express = require("express");
-const {connectDB} = require("./config/database");
-const cors = require("cors"); 
-const app = express();
+const { connectDB } = require("./config/database");
+const cors = require("cors");
 const cookieParser = require("cookie-parser");
-
-
+require("dotenv").config();
 
 const authRouter = require("./routes/authModel");
 const userRoutes = require("./routes/userRoutes");
-const chatRoute = require("./routes/chatRoute")
+const chatRoute = require("./routes/chatRoute");
 
-
-require("dotenv").config();
+const app = express();
 
 app.use(
   cors({
@@ -24,7 +21,6 @@ app.use(
   })
 );
 
-
 app.use(express.json());
 app.use(cookieParser());
 
@@ -32,13 +28,20 @@ app.get("/", (req, res) => {
   res.send("Backend is running 🚀");
 });
 
-
-// ✅ Routes
 app.use("/", authRouter);
 app.use("/", userRoutes);
 app.use("/chat", chatRoute);
 
-
-connectDB().catch(console.error);
+connectDB()
+  .then(() => {
+    console.log("Database connection established");
+    const PORT = process.env.PORT || 5000;
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error("Critical Error: Database connection failed", err);
+  });
 
 module.exports = app;
