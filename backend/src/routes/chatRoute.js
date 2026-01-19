@@ -1,32 +1,27 @@
 const express = require("express");
-// Updated package: The latest SDK often uses @google/genai
-const { GoogleGenAI } = require("@google/genai"); 
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 const protect = require("../middlewares/authMiddleware");
 const Interview = require("../models/Interview");
 const chatRoute = express.Router();
 
-// Initialize the client with the new SDK structure
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 async function generateInterviewQA(skill) {
-  // Use the latest stable 2026 model: gemini-3-flash
-  // Note: Models like gemini-2.0-flash are retired in March 2026
-  const response = await ai.models.generateContent({
-    model: "gemini-3-flash", 
-    contents: `Generate 10 mock interview questions and answers on "${skill}". 
-               Return ONLY a valid JSON array. 
-               Format: [{"question": "string", "answer": "string"}]`,
-    // Setting thinking level to 'low' for faster, chat-like responses
-    config: {
-      thinkingConfig: { thinkingLevel: "low" }
-    }
-  });
+  // Use gemini-3-flash with stable v1 API version to avoid 404
+  const model = genAI.getGenerativeModel(
+    { model: "gemini-3-flash" }, 
+    { apiVersion: "v1" }
+  );
 
-  const text = response.text;
+  const prompt = `Generate 10 mock interview questions and answers on "${skill}". Return ONLY a valid JSON array. Format: [{"question": "string", "answer": "string"}]`;
+
+  const result = await model.generateContent(prompt);
+  const response = await result.response;
+  const text = response.text();
   
-  // Robust JSON extraction remains a good practice
+  // Robustly extract JSON from potential markdown backticks
   const jsonMatch = text.match(/\[[\s\S]*\]/);
-  if (!jsonMatch) throw new Error("Invalid JSON response");
+  if (!jsonMatch) throw new Error("AI failed to provide a valid JSON array");
   
   return JSON.parse(jsonMatch[0]);
 }
@@ -45,7 +40,7 @@ chatRoute.post("/generate", protect, async (req, res) => {
 
     res.status(201).json({ success: true, data: interview });
   } catch (err) {
-    // Check for specific 2026 error codes like 429 for quota
+    // If you see "429 Too Many Requests", your free quota is exhausted
     res.status(500).json({ error: err.message });
   }
 });

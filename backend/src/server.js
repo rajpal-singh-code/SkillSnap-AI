@@ -10,16 +10,11 @@ const chatRoute = require("./routes/chatRoute");
 
 const app = express();
 
-app.use(
-  cors({
-    origin: [
-      "https://skill-sprout-j3n9.vercel.app",
-      "http://localhost:5173",
-    ],
+app.use(cors({
+    origin: ["https://skill-sprout-j3n9.vercel.app", "http://localhost:5173"],
     methods: ["GET", "POST", "PATCH", "DELETE", "PUT", "OPTIONS"],
     credentials: true,
-  })
-);
+}));
 
 app.use(express.json());
 app.use(cookieParser());
@@ -32,16 +27,17 @@ app.use("/", authRouter);
 app.use("/", userRoutes);
 app.use("/chat", chatRoute);
 
-connectDB()
-  .then(() => {
-    console.log("Database connection established");
+// Fix: Wait for DB connection before allowing the server to handle requests
+const startServer = async () => {
+  try {
+    await connectDB();
     const PORT = process.env.PORT || 5000;
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.error("Critical Error: Database connection failed", err);
-  });
+    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  } catch (err) {
+    console.error("Failed to start server:", err.message);
+  }
+};
+
+startServer();
 
 module.exports = app;
