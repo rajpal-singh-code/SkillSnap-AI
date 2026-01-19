@@ -5,15 +5,23 @@ const Interview = require("../models/Interview");
 const chatRoute = express.Router();
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 async function generateInterviewQA(skill) {
+  const model = genAI.getGenerativeModel(
+    { model: "gemini-1.5-flash-latest" },
+    { apiVersion: "v1" }
+  );
+
   const prompt = `Generate 10 mock interview questions and answers on "${skill}". Return ONLY a valid JSON array. Format: [{"question": "string", "answer": "string"}]`;
-  
+
   const result = await model.generateContent(prompt);
-  const text = result.response.text();
-  const cleanJson = text.replace(/```json|```/g, "").trim();
-  return JSON.parse(cleanJson);
+  const response = await result.response;
+  const text = response.text();
+  
+  const jsonMatch = text.match(/\[[\s\S]*\]/);
+  if (!jsonMatch) throw new Error("Invalid JSON response");
+  
+  return JSON.parse(jsonMatch[0]);
 }
 
 chatRoute.post("/generate", protect, async (req, res) => {
