@@ -4,8 +4,7 @@ const protect = require("../middlewares/authMiddleware");
 const Interview = require("../models/Interview");
 
 const chatRoute = express.Router();
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const genAI = new GoogleGenerativeAI({ apiKey: process.env.GEMINI_API_KEY });
 
 async function generateInterviewQA(skill) {
   const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
@@ -20,26 +19,15 @@ Format:
 
   try {
     const result = await model.generateContent(prompt);
-    const response = await result.response;
-    let text = response.text().trim();
-
+    let text = result.output_text.trim();
     text = text.replace(/^```(?:json)?\s*/i, "").replace(/```$/g, "").trim();
-
     const jsonMatch = text.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) {
-      throw new Error("No JSON array found in response");
-    }
-
+    if (!jsonMatch) throw new Error("No JSON array found in response");
     let jsonStr = jsonMatch[0];
     jsonStr = jsonStr.replace(/'/g, '"');
     jsonStr = jsonStr.replace(/,\s*([}\]])/g, "$1");
-
     const questions = JSON.parse(jsonStr);
-
-    if (!Array.isArray(questions) || questions.length !== 10) {
-      throw new Error("Invalid questions array (expected 10 items)");
-    }
-
+    if (!Array.isArray(questions) || questions.length !== 10) throw new Error("Invalid questions array (expected 10 items)");
     const isValid = questions.every(
       (q) =>
         q &&
@@ -48,11 +36,7 @@ Format:
         typeof q.answer === "string" &&
         q.answer.trim() !== ""
     );
-
-    if (!isValid) {
-      throw new Error("Some question or answer is empty/invalid");
-    }
-
+    if (!isValid) throw new Error("Some question or answer is empty/invalid");
     return questions;
   } catch (error) {
     console.error("Gemini error:", error.message);
@@ -63,42 +47,26 @@ Format:
 chatRoute.post("/generate", protect, async (req, res) => {
   try {
     const { skill } = req.body;
-
     if (!skill || typeof skill !== "string" || skill.trim() === "") {
-      return res.status(400).json({
-        success: false,
-        error: "Valid skill name is required",
-      });
+      return res.status(400).json({ success: false, error: "Valid skill name is required" });
     }
-
     const trimmedSkill = skill.trim();
     const questions = await generateInterviewQA(trimmedSkill);
-
     const interview = await Interview.create({
       user: req.user._id,
       QnA_On: trimmedSkill,
       questions,
     });
-
-    return res.status(201).json({
-      success: true,
-      data: interview,
-    });
+    return res.status(201).json({ success: true, data: interview });
   } catch (err) {
     console.error("Route error:", err);
-
     let status = 500;
     let message = err.message;
-
-    if (message.includes("quota") || message.includes("rate limit")) {
+    if (message.toLowerCase().includes("quota") || message.toLowerCase().includes("rate limit")) {
       status = 429;
       message = "Rate limit exceeded - try again later";
     }
-
-    return res.status(status).json({
-      success: false,
-      error: message,
-    });
+    return res.status(status).json({ success: false, error: message });
   }
 });
 
