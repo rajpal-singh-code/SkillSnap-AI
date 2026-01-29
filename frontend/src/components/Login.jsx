@@ -25,18 +25,15 @@ const Login = () => {
 
     const { user } = res.data;
 
-    localStorage.setItem("user", JSON.stringify(user));
-    dispatch(addUser({ user }));
-
+    dispatch(addUser(user));
     navigate("/");
   } catch (err) {
-    const errorMsg =
-      err?.response?.data?.error ||
-      "Login failed";
-
-    setError(errorMsg);
+    setError(
+      err?.response?.data?.error || "Login failed"
+    );
   }
 };
+
 
 
   const handleSignUp = async () => {

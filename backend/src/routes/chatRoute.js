@@ -1,6 +1,6 @@
 const express = require("express");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const protect = require("../middlewares/authMiddleware");
+// const protect = require("../middlewares/authMiddleware");
 const Interview = require("../models/Interview");
 const dotenv = require("dotenv");
 
@@ -45,7 +45,7 @@ Format:
 }
 
 // POST route to trigger AI interview generation
-chatRoute.post("/generate", protect, async (req, res) => {
+chatRoute.post("/generate", async (req, res) => {
   try {
     const { skill } = req.body;
 
