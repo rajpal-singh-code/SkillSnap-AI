@@ -10,10 +10,14 @@ const NavBar = () => {
   const { user } = useSelector((store) => store.user);
 
   const handleLogout = async () => {
-  await api.post("/logout", {}, { withCredentials: true });
-  navigate("/login");
-  dispatch(removeUser());
-};
+    try {
+      await api.post("/logout", {}, { withCredentials: true });
+      dispatch(removeUser());
+      navigate("/login");
+    } catch (err) {
+      console.error("Logout failed", err);
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 backdrop-blur-lg bg-black/30 border-b border-white/20 shadow-lg">

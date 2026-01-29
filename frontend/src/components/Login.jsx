@@ -16,25 +16,28 @@ const Login = () => {
   const navigate = useNavigate();
 
   const handleLogin = async () => {
-  try {
-    const res = await api.post(
-      "/login",
-      { emailId, password },
-      { withCredentials: true }
-    );
+    try {
+      const res = await api.post("/login", { emailId, password }, { withCredentials: true });
 
-    const { user } = res.data;
+      const { user, token } = res.data;
 
-    dispatch(addUser(user));
-    navigate("/");
-  } catch (err) {
-    setError(
-      err?.response?.data?.error || "Login failed"
-    );
-  }
-};
+      
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
 
+      
+      dispatch(addUser({ user, token }));
 
+      navigate("/");
+    } catch (err) {
+      const errorMsg =
+        err?.response?.data?.message ||
+        err?.response?.data ||
+        "Login failed";
+
+      setError(typeof errorMsg === "string" ? errorMsg : "Invalid Credentials");
+    }
+  };
 
   const handleSignUp = async () => {
     try {
