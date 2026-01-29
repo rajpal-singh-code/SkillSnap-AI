@@ -2,71 +2,108 @@ const express = require("express");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const protect = require("../middlewares/authMiddleware");
 const Interview = require("../models/Interview");
+const dotenv = require("dotenv");
 
 const chatRoute = express.Router();
-const genAI = new GoogleGenerativeAI({ apiKey: process.env.GEMINI_API_KEY });
 
+dotenv.config();
+const interviewRoute = express.Router();
+
+// Initialize Gemini API client
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+// Model selection
+const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+
+// Function to generate interview Q&A
 async function generateInterviewQA(skill) {
-  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+  const prompt = `
+Return only valid JSON array. No markdown, no text outside JSON.
 
-  const prompt = `Generate exactly 10 mock interview questions with detailed answers for "${skill}".
-Return ONLY clean valid JSON array. No markdown, no code blocks, no extra text.
+Generate 10 mock interview questions and answers on "${skill}".
+Each answer must be a 2-3 line paragraph.
+
 Format:
 [
-  {"question": "Question text", "answer": "Full detailed answer"},
-  ...
-]`;
+  {"question": "string", "answer": "string"}
+]
+`;
 
   try {
     const result = await model.generateContent(prompt);
-    let text = result.output_text.trim();
-    text = text.replace(/^```(?:json)?\s*/i, "").replace(/```$/g, "").trim();
-    const jsonMatch = text.match(/\[[\s\S]*\]/);
-    if (!jsonMatch) throw new Error("No JSON array found in response");
-    let jsonStr = jsonMatch[0];
-    jsonStr = jsonStr.replace(/'/g, '"');
-    jsonStr = jsonStr.replace(/,\s*([}\]])/g, "$1");
-    const questions = JSON.parse(jsonStr);
-    if (!Array.isArray(questions) || questions.length !== 10) throw new Error("Invalid questions array (expected 10 items)");
-    const isValid = questions.every(
-      (q) =>
-        q &&
-        typeof q.question === "string" &&
-        q.question.trim() !== "" &&
-        typeof q.answer === "string" &&
-        q.answer.trim() !== ""
-    );
-    if (!isValid) throw new Error("Some question or answer is empty/invalid");
-    return questions;
+    const text = result.response.text();
+    // console.log("Gemini output:", text);
+
+    const match = text.match(/\[([\s\S]*)\]/);
+    const questionsArray = match ? JSON.parse(match[0]) : [];
+
+    return { QnA_On: skill, questions: questionsArray };
   } catch (error) {
-    console.error("Gemini error:", error.message);
-    throw new Error(`Failed to generate questions: ${error.message}`);
+    console.error("Error generating:", error);
+    return { QnA_On: skill, questions: [] };
   }
 }
 
+// POST route to trigger AI interview generation
 chatRoute.post("/generate", protect, async (req, res) => {
   try {
     const { skill } = req.body;
-    if (!skill || typeof skill !== "string" || skill.trim() === "") {
-      return res.status(400).json({ success: false, error: "Valid skill name is required" });
+
+    if (!skill) {
+      return res.status(400).json({ error: "Skill is required." });
     }
-    const trimmedSkill = skill.trim();
-    const questions = await generateInterviewQA(trimmedSkill);
-    const interview = await Interview.create({
+
+    // Generate interview Q&A
+    const qaList = await generateInterviewQA(skill);
+
+    // Save properly structured document
+    const newData = new Interview({
       user: req.user._id,
-      QnA_On: trimmedSkill,
-      questions,
+      userFullName: req.user.fullName,
+      QnA_On: qaList.QnA_On,
+      questions: qaList.questions,
     });
-    return res.status(201).json({ success: true, data: interview });
-  } catch (err) {
-    console.error("Route error:", err);
-    let status = 500;
-    let message = err.message;
-    if (message.toLowerCase().includes("quota") || message.toLowerCase().includes("rate limit")) {
-      status = 429;
-      message = "Rate limit exceeded - try again later";
+
+    // console.log(qaList.questions);
+
+    if (!qaList.questions || qaList.questions.length === 0) {
+      return res.status(400).json({
+        success: true,
+        message: "Questions not generated. Try again later!!",
+      });
     }
-    return res.status(status).json({ success: false, error: message });
+
+    // Only save if questions exist
+    await newData.save();
+    res.status(200).json({
+      success: true,
+      data: {
+        status: "pending",
+        QnA_On: qaList.QnA_On,
+        questions: qaList.questions,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+chatRoute.get("/history", protect, async (req, res) => {
+  try {
+    const history = await Interview.find({});
+
+    res.status(200).json({
+      success: true,
+      history,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 });
 

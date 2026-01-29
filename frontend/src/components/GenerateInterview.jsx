@@ -17,7 +17,7 @@ const GeneratedInterview = () => {
       setLoading(true);
       setError("");
       const res = await api.post("/chat/generate", { skill });
-      setInterview(res.data.data);
+      setInterview(res.data.data);  
     } catch {
       setError("My circuits are a bit fuzzy. Try again? ☁️");
     } finally {
