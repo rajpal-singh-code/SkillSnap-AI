@@ -11,7 +11,7 @@ const chatRoute = require("./routes/chatRoute");
 const app = express();
 
 app.use(cors({
-    origin: ["https://skill-sprout-j3n9.vercel.app", "http://localhost:5173"],
+    origin: ["https://skill-snap-ai-client.vercel.app", "http://localhost:5173"],
     methods: ["GET", "POST", "PATCH", "DELETE", "PUT", "OPTIONS"],
     credentials: true,
 }));
