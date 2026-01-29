@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "https://skill-snap-ai.vercel.app",
+  baseURL: "https://skill-sprout-plum.vercel.app",
   withCredentials: true,
 });
 
