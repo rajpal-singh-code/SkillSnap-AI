@@ -1,7 +1,7 @@
 const express = require("express");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const Interview = require("../models/Interview");
-const protect = require("../middleware/protect");
+const protect = require("../middlewares/authMiddleware");
 const dotenv = require("dotenv");
 
 dotenv.config();
