@@ -1,16 +1,25 @@
 const jwt = require("jsonwebtoken");
-const User = require("../models/User"); // ⚠️ keep filename case correct
+const User = require("../models/User");
 
 const protect = async (req, res, next) => {
   try {
-    const token = req.cookies.token;
+    let token;
+
+    // ✅ from cookie
+    if (req.cookies?.token) {
+      token = req.cookies.token;
+    }
+
+    // ✅ from Authorization header
+    if (!token && req.headers.authorization?.startsWith("Bearer")) {
+      token = req.headers.authorization.split(" ")[1];
+    }
 
     if (!token) {
       return res.status(401).json({ message: "Not logged in" });
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
     const user = await User.findById(decoded._id).select("-password");
 
     if (!user) {
@@ -19,8 +28,8 @@ const protect = async (req, res, next) => {
 
     req.user = user;
     next();
-  } catch (error) {
-    return res.status(401).json({ message: "Invalid token" });
+  } catch (err) {
+    res.status(401).json({ message: "Invalid token" });
   }
 };
 

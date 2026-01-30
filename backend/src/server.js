@@ -11,7 +11,7 @@ const chatRoute = require("./routes/chatRoute");
 const app = express();
 
 app.use(cors({
-    origin: ["https://skill-sprout-j3n9.vercel.app", "http://localhost:5173"],
+    origin: ["http://localhost:5173"],
     methods: ["GET", "POST", "PATCH", "DELETE", "PUT", "OPTIONS"],
     credentials: true,
 }));
@@ -27,7 +27,7 @@ app.use("/", authRouter);
 app.use("/", userRoutes);
 app.use("/chat", chatRoute);
 
-// Fix: Wait for DB connection before allowing the server to handle requests
+
 const startServer = async () => {
   try {
     await connectDB();
