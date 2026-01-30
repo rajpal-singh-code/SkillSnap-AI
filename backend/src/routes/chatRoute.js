@@ -1,7 +1,7 @@
 const express = require("express");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const Interview = require("../models/Interview");
-const protect = require("../middlewares/authMiddleware");
+// const protect = require("../middlewares/authMiddleware");
 const dotenv = require("dotenv");
 
 dotenv.config();
@@ -58,7 +58,7 @@ Format:
  * @desc    Generate interview questions
  * @access  Private
  */
-chatRoute.post("/generate", protect, async (req, res) => {
+chatRoute.post("/generate", async (req, res) => {
   try {
     const { skill } = req.body;
 
@@ -104,7 +104,7 @@ chatRoute.post("/generate", protect, async (req, res) => {
  * @desc    Get user's interview history
  * @access  Private
  */
-chatRoute.get("/history", protect, async (req, res) => {
+chatRoute.get("/history", async (req, res) => {
   try {
     const history = await Interview.find({ user: req.user._id })
       .populate("user", "fullName email")
