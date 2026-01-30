@@ -5,13 +5,11 @@ const protect = async (req, res, next) => {
   try {
     let token;
 
-    // ✅ from cookie
     if (req.cookies?.token) {
       token = req.cookies.token;
     }
 
-    // ✅ from Authorization header
-    if (!token && req.headers.authorization?.startsWith("Bearer")) {
+    if (!token && req.headers.authorization?.startsWith("Bearer ")) {
       token = req.headers.authorization.split(" ")[1];
     }
 
@@ -27,6 +25,7 @@ const protect = async (req, res, next) => {
     }
 
     req.user = user;
+    req.userId = user._id; // optional
     next();
   } catch (err) {
     res.status(401).json({ message: "Invalid token" });

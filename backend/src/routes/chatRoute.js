@@ -1,7 +1,7 @@
 const express = require("express");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const Interview = require("../models/Interview");
-// const protect = require("../middlewares/authMiddleware");
+const protect = require("../middleware/protect");
 const dotenv = require("dotenv");
 
 dotenv.config();
@@ -14,9 +14,7 @@ const model = genAI.getGenerativeModel({
   model: "gemini-2.5-flash-lite",
 });
 
-/**
- * Generate interview Q&A using Gemini
- */
+// Generate interview Q&A
 async function generateInterviewQA(skill) {
   const prompt = `
 Return ONLY a valid JSON array.
@@ -34,31 +32,20 @@ Format:
   try {
     const result = await model.generateContent(prompt);
     const text = result.response.text();
-
-    // Extract JSON safely
     const match = text.match(/\[[\s\S]*\]/);
-    if (!match) {
-      return { QnA_On: skill, questions: [] };
-    }
-
-    const questionsArray = JSON.parse(match[0]);
+    if (!match) return { QnA_On: skill, questions: [] };
 
     return {
       QnA_On: skill,
-      questions: questionsArray,
+      questions: JSON.parse(match[0]),
     };
   } catch (error) {
-    console.error("Gemini Error:", error.message);
     return { QnA_On: skill, questions: [] };
   }
 }
 
-/**
- * @route   POST /api/chat/generate
- * @desc    Generate interview questions
- * @access  Private
- */
-chatRoute.post("/generate", async (req, res) => {
+// 🔐 PROTECTED ROUTE
+chatRoute.post("/generate", protect, async (req, res) => {
   try {
     const { skill } = req.body;
 
@@ -79,7 +66,7 @@ chatRoute.post("/generate", async (req, res) => {
     }
 
     const interview = new Interview({
-      user: req.user._id,
+      user: req.user._id, // ✅ SAFE NOW
       QnA_On: qaList.QnA_On,
       questions: qaList.questions,
       status: "pending",
@@ -99,12 +86,8 @@ chatRoute.post("/generate", async (req, res) => {
   }
 });
 
-/**
- * @route   GET /api/chat/history
- * @desc    Get user's interview history
- * @access  Private
- */
-chatRoute.get("/history", async (req, res) => {
+// 🔐 PROTECTED ROUTE
+chatRoute.get("/history", protect, async (req, res) => {
   try {
     const history = await Interview.find({ user: req.user._id })
       .populate("user", "fullName email")
