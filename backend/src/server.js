@@ -7,16 +7,18 @@ require("dotenv").config();
 const authRouter = require("./routes/authModels");
 const chatRoutes = require("./routes/chatRoutes");
 
-
 const app = express();
+
 
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: [
+      "http://localhost:5173",
+      "https://skill-snap-ai-4trx.vercel.app",
+    ],
     credentials: true,
   })
 );
-
 
 app.use(cookieParser());
 app.use(express.json());
@@ -27,7 +29,6 @@ app.get("/", (req, res) => {
 
 app.use("/", authRouter);
 app.use("/api/chat", chatRoutes);
-
 
 const startServer = async () => {
   try {
