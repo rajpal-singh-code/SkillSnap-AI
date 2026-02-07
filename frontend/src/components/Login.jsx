@@ -58,8 +58,8 @@ const Login = () => {
   return (
     <div className="min-h-screen flex font-sans">
       
-      {/* LEFT PANEL */}
-      <div className="hidden md:flex w-1/2 bg-gradient-to-br from-blue-900 to-indigo-900 items-center justify-center relative text-white">
+     
+      <div className="hidden md:flex w-1/2 bg-linear-to-br from-blue-900 to-indigo-900 items-center justify-center relative text-white">
         <div className="px-12">
           <h1 className="text-4xl font-semibold">Hello!</h1>
           <h2 className="text-5xl font-bold mt-2 leading-tight">
@@ -67,13 +67,13 @@ const Login = () => {
           </h2>
         </div>
 
-        {/* Decorative shapes */}
+        
         <div className="absolute top-12 left-10 w-24 h-24 rounded-full bg-white/10"></div>
         <div className="absolute bottom-20 right-16 w-32 h-32 rounded-full bg-white/5"></div>
         <div className="absolute top-1/2 right-10 w-16 h-16 rounded-full bg-white/10"></div>
       </div>
 
-      {/* RIGHT PANEL */}
+     
       <div className="flex w-full md:w-1/2 items-center justify-center bg-white">
         <div className="w-full max-w-md px-8">
           <h2 className="text-2xl font-semibold text-gray-800 text-center mb-8">
@@ -101,7 +101,7 @@ const Login = () => {
 
           <input
             type="email"
-            placeholder="Username"
+            placeholder="emailId"
             value={emailId}
             onChange={(e) => setEmailId(e.target.value)}
             className="w-full mb-4 px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
